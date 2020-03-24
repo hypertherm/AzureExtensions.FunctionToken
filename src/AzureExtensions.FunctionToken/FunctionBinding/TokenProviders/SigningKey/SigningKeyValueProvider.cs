@@ -4,7 +4,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
 using AzureExtensions.FunctionToken.FunctionBinding.Options;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.IdentityModel.Tokens;
 
 namespace AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.SigningKey
@@ -14,21 +13,20 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.SigningKe
     /// </summary>
     internal class SigningKeyValueProvider : BearerTokenValueProvider
     {
-        private readonly TokenSinginingKeyOptions options;
+        private readonly TokenSigningKeyOptions options;
 
         /// <inheritdoc />
         public SigningKeyValueProvider(
             HttpRequest request,
-            TokenSinginingKeyOptions options,
+            TokenSigningKeyOptions options,
             FunctionTokenAttribute attribute)
             : this(request, options, attribute, new JwtSecurityTokenHandler())
         {
-            this.options = options;
         }
 
         public SigningKeyValueProvider(
             HttpRequest request,
-            TokenSinginingKeyOptions options,
+            TokenSigningKeyOptions options,
             FunctionTokenAttribute attribute,
             ISecurityTokenValidator securityHandler)
             : base(request, options, attribute, securityHandler)

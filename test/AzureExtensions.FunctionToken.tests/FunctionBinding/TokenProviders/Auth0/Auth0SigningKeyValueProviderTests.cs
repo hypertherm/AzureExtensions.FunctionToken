@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using AzureExtensions.FunctionToken.FunctionBinding.Enums;
 using AzureExtensions.FunctionToken.FunctionBinding.Options;
-using AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.SigningKey;
+using AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.Auth0;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
@@ -13,7 +13,7 @@ using Xunit;
 
 namespace AzureExtensions.FunctionToken.Tests
 {
-    public class SigningKeyValueProviderTests
+    public class Auth0ValueProviderTests
     {
         [Theory]
         [ClassData(typeof(UnitsTestData))]
@@ -26,25 +26,8 @@ namespace AzureExtensions.FunctionToken.Tests
             request
                 .SetupGet(r => r.HttpContext)
                 .Returns(Mock.Of<HttpContext>());
-            TokenSigningKeyOptions options = new TokenSigningKeyOptions {
-                SigningKey = JsonWebKey.Create(
-                    @"{
-                        ""alg"": ""RS256"",
-                        ""kty"": ""RSA"",
-                        ""use"": ""sig"",
-                        ""n"": ""fasdklfjahsdfkaljsnddfnlkasudvgiuq3450897uzxcvnlksdfn---aserkfjasbvdkluy3t45r"",
-                        ""e"": ""AQAB"",
-                        ""kid"": ""NKJLGHLJKHGBVKBLKJAFUYKJHBFADF"",
-                        ""x5t"": ""NKJLGHLJKHGBVKBLKJAFUYKJHBFADF"",
-                        ""x5c"": [
-                            ""hkjlgrhkljzvkzjhlgvzvdklhvzsilseujrgfoisyehfltw34to--=sdfghzksujfdhgi7tsertukjhask.fhcgfalsiyuegrht.jklw34batgfklyuasgdvkjsdrbg=""
-                        ]
+            Auth0Options options = new Auth0Options("some audience");
 
-                    }"
-                ),
-                Issuer = "http://iamanissuerofauthtokens.com",
-                Audience = "some audience",
-            };
             FunctionTokenAttribute attribute = new FunctionTokenAttribute(
                 AuthLevel.Authorized,
                 requiredScope,
@@ -69,7 +52,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     })
                 );
 
-            SigningKeyValueProvider provider = new SigningKeyValueProvider(
+            Auth0ValueProvider provider = new Auth0ValueProvider(
                 request.Object,
                 options,
                 attribute,
@@ -125,7 +108,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     null,
                     new List<Claim> 
                     {
-                        new Claim("scp", "Read"),
+                        new Claim("scope", "Read"),
                     },
                     TokenStatus.Valid
                 };
@@ -135,7 +118,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {},
                     new List<Claim> 
                     {
-                        new Claim("scp", "Read"),
+                        new Claim("scope", "Read"),
                     },
                     TokenStatus.Valid
                 };
@@ -145,7 +128,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {},
                     new List<Claim> 
                     {
-                        new Claim("scp", "Different Scope"),
+                        new Claim("scope", "Different Scope"),
                     },
                     TokenStatus.Error
                 };
@@ -155,7 +138,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     null,
                     new List<Claim> 
                     {
-                        new Claim("scp", "Different Scope"),
+                        new Claim("scope", "Different Scope"),
                     },
                     TokenStatus.Error
                 };
@@ -180,7 +163,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     null,
                     new List<Claim> 
                     {
-                        new Claim("scp", "write read"),
+                        new Claim("scope", "write read"),
                     },
                     TokenStatus.Valid
                 };
@@ -190,7 +173,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {},
                     new List<Claim> 
                     {
-                        new Claim("scp", "write read"),
+                        new Claim("scope", "write read"),
                     },
                     TokenStatus.Valid
                 };
@@ -201,7 +184,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim("scp", "read"),
+                        new Claim("scope", "read"),
                     },
                     TokenStatus.Error
                 };
@@ -211,7 +194,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim("scp", "write read"),
+                        new Claim("scope", "write read"),
                     },
                     TokenStatus.Error
                 };
@@ -221,7 +204,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim("scp", "read"),
+                        new Claim("scope", "read"),
                         new Claim(ClaimTypes.Role, "nonuser")
                     },
                     TokenStatus.Error
@@ -232,7 +215,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim("scp", "read"),
+                        new Claim("scope", "read"),
                         new Claim(ClaimTypes.Role, "user")
                     },
                     TokenStatus.Valid
@@ -243,7 +226,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim("scp", "write read"),
+                        new Claim("scope", "write read"),
                         new Claim(ClaimTypes.Role, "user")
                     },
                     TokenStatus.Valid
@@ -254,7 +237,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"admin", "user"},
                     new List<Claim> 
                     {
-                        new Claim("scp", "read"),
+                        new Claim("scope", "read"),
                         new Claim(ClaimTypes.Role, "user")
                     },
                     TokenStatus.Valid
