@@ -2,10 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using AzureExtensions.FunctionToken.FunctionBinding.Enums;
 using AzureExtensions.FunctionToken.FunctionBinding.Options;
-using AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.B2C;
+using AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.Auth0;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
@@ -14,10 +13,8 @@ using Xunit;
 
 namespace AzureExtensions.FunctionToken.Tests
 {
-    public class BearerTokenB2CValueProviderTests
+    public class Auth0ValueProviderTests
     {
-        private const string B2CScopeClaimName = "http://schemas.microsoft.com/identity/claims/scope";
-
         [Theory]
         [ClassData(typeof(UnitsTestData))]
         public void GetValueAsyncWorksForScope(string requiredScope, string[] authorizedRoles, List<Claim> claims, TokenStatus tokenStatus)
@@ -29,22 +26,14 @@ namespace AzureExtensions.FunctionToken.Tests
             request
                 .SetupGet(r => r.HttpContext)
                 .Returns(Mock.Of<HttpContext>());
-            TokenAzureB2COptions options = new TokenAzureB2COptions {
-                AzureB2CSingingKeyUri = new Uri("http://localhost:7001")
-            };
+            Auth0Options options = new Auth0Options("some audience");
+
             FunctionTokenAttribute attribute = new FunctionTokenAttribute(
                 AuthLevel.Authorized,
                 requiredScope,
                 authorizedRoles
             );
             SecurityToken mockSecurityToken = Mock.Of<SecurityToken>();
-            Mock<IAzureB2CTokensLoader> mockLoader = new Mock<IAzureB2CTokensLoader>();
-            mockLoader
-                .Setup(l => l.Load(It.IsAny<Uri>()))
-                .Returns(Task<List<JsonWebKey>>.Factory.StartNew( o => new List<JsonWebKey>(), null));
-            mockLoader
-                .Setup(l => l.Reload(It.IsAny<Uri>()))
-                .Returns(Task<List<JsonWebKey>>.Factory.StartNew( o => new List<JsonWebKey>(), null));
             Mock<ISecurityTokenValidator> mockSecurityTokenValidator = new Mock<ISecurityTokenValidator>();
             mockSecurityTokenValidator
                 .Setup(v => v.ValidateToken(
@@ -63,11 +52,10 @@ namespace AzureExtensions.FunctionToken.Tests
                     })
                 );
 
-            BearerTokenB2CValueProvider provider = new BearerTokenB2CValueProvider(
+            Auth0ValueProvider provider = new Auth0ValueProvider(
                 request.Object,
                 options,
                 attribute,
-                mockLoader.Object,
                 mockSecurityTokenValidator.Object
             );
             
@@ -120,7 +108,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     null,
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "Read"),
+                        new Claim("scope", "Read"),
                     },
                     TokenStatus.Valid
                 };
@@ -130,7 +118,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {},
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "Read"),
+                        new Claim("scope", "Read"),
                     },
                     TokenStatus.Valid
                 };
@@ -140,7 +128,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {},
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "Different Scope"),
+                        new Claim("scope", "Different Scope"),
                     },
                     TokenStatus.Error
                 };
@@ -150,7 +138,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     null,
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "Different Scope"),
+                        new Claim("scope", "Different Scope"),
                     },
                     TokenStatus.Error
                 };
@@ -175,7 +163,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     null,
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "write read"),
+                        new Claim("scope", "write read"),
                     },
                     TokenStatus.Valid
                 };
@@ -185,7 +173,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {},
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "write read"),
+                        new Claim("scope", "write read"),
                     },
                     TokenStatus.Valid
                 };
@@ -196,7 +184,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "read"),
+                        new Claim("scope", "read"),
                     },
                     TokenStatus.Error
                 };
@@ -206,7 +194,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "write read"),
+                        new Claim("scope", "write read"),
                     },
                     TokenStatus.Error
                 };
@@ -216,7 +204,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "read"),
+                        new Claim("scope", "read"),
                         new Claim(ClaimTypes.Role, "nonuser")
                     },
                     TokenStatus.Error
@@ -227,7 +215,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "read"),
+                        new Claim("scope", "read"),
                         new Claim(ClaimTypes.Role, "user")
                     },
                     TokenStatus.Valid
@@ -238,7 +226,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"user"},
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "write read"),
+                        new Claim("scope", "write read"),
                         new Claim(ClaimTypes.Role, "user")
                     },
                     TokenStatus.Valid
@@ -249,7 +237,7 @@ namespace AzureExtensions.FunctionToken.Tests
                     new string[] {"admin", "user"},
                     new List<Claim> 
                     {
-                        new Claim(B2CScopeClaimName, "read"),
+                        new Claim("scope", "read"),
                         new Claim(ClaimTypes.Role, "user")
                     },
                     TokenStatus.Valid

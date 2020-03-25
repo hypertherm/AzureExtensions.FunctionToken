@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using AzureExtensions.FunctionToken.FunctionBinding.Options;
 using AzureExtensions.FunctionToken.FunctionBinding.Options.Interface;
+using AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.Auth0;
 using AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.B2C;
 using AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.Firebase;
 using AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.SigningKey;
@@ -46,10 +47,10 @@ namespace AzureExtensions.FunctionToken.FunctionBinding
                         tokenAzureB2COptions,
                         attribute));
             }
-            else if (options is TokenSinginingKeyOptions tokenSinginingKeyOptions)
+            else if (options is TokenSigningKeyOptions tokenSinginingKeyOptions)
             {
                 return Task.FromResult<IValueProvider>(
-                    new SingingKeyValueProvider(
+                    new SigningKeyValueProvider(
                         request,
                         tokenSinginingKeyOptions,
                         attribute));
@@ -60,6 +61,14 @@ namespace AzureExtensions.FunctionToken.FunctionBinding
                     new FirebaseKeyValueProvider(
                         request,
                         fireOptions,
+                        attribute));
+            }
+            else if (options is Auth0Options auth0Options)
+            {
+                return Task.FromResult<IValueProvider>(
+                    new Auth0ValueProvider(
+                        request,
+                        auth0Options,
                         attribute));
             }
             else
