@@ -2,11 +2,15 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using AzureExtensions.FunctionToken.FunctionBinding.Enums;
 using AzureExtensions.FunctionToken.FunctionBinding.Options;
 using AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.Auth0;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Xunit;
@@ -26,7 +30,35 @@ namespace AzureExtensions.FunctionToken.Tests
             request
                 .SetupGet(r => r.HttpContext)
                 .Returns(Mock.Of<HttpContext>());
-            Auth0Options options = new Auth0Options("some audience");
+            Mock<IConfigurationManager<OpenIdConnectConfiguration>> mockConfigurationManager = new Mock<IConfigurationManager<OpenIdConnectConfiguration>>();
+            mockConfigurationManager
+                .Setup(c => c.GetConfigurationAsync(It.IsAny<CancellationToken>()))
+                .Returns(
+                    Task.FromResult( 
+                        new OpenIdConnectConfiguration
+                        {
+                            JsonWebKeySet = new JsonWebKeySet(
+@"{
+    ""keys"": [
+        {
+            ""alg"": ""RS256"",
+            ""kty"": ""RSA"",
+            ""use"": ""sig"",
+            ""n"": ""big string1"",
+            ""e"": ""AQAB"",
+            ""kid"": ""big string 2"",
+            ""x5t"": ""big string 2"",
+            ""x5c"": [
+                ""big string 3""
+            ]
+        }
+    ]
+}"
+                            )
+                        }
+                    )
+                );
+            Auth0Options options = new Auth0Options(mockConfigurationManager.Object, "someaudience");
 
             FunctionTokenAttribute attribute = new FunctionTokenAttribute(
                 AuthLevel.Authorized,

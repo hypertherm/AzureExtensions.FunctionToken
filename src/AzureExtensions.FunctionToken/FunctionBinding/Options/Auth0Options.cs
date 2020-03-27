@@ -1,8 +1,9 @@
 ﻿using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using AzureExtensions.FunctionToken.FunctionBinding.Options.Interface;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.IdentityModel.Tokens;
 
 namespace AzureExtensions.FunctionToken.FunctionBinding.Options
 {
@@ -10,15 +11,23 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.Options
     {
         public TokenSigningKeyOptions SigningOptions { get; }
 
-        public Auth0Options(string audience)
-        {
-             ConfigurationManager<OpenIdConnectConfiguration> configManager =
+        public Auth0Options(string tenantName, string audience)
+            : this(
                 new ConfigurationManager<OpenIdConnectConfiguration>(
-                    "https://dev-pxwhh3cr.auth0.com/.well-known/openid-configuration",
-                    new OpenIdConnectConfigurationRetriever());
-
-            OpenIdConnectConfiguration config = null;
-            config = configManager.GetConfigurationAsync().GetAwaiter().GetResult();
+                    $"https://{tenantName}.auth0.com/.well-known/openid-configuration",
+                    new OpenIdConnectConfigurationRetriever()
+                ),
+                audience
+            )
+        {
+        }
+        
+        public Auth0Options(IConfigurationManager<OpenIdConnectConfiguration> configurationManager, string audience)
+        {
+            OpenIdConnectConfiguration config = configurationManager
+                .GetConfigurationAsync(new CancellationTokenSource().Token)
+                .GetAwaiter()
+                .GetResult();
             
             SigningOptions = new TokenSigningKeyOptions()
             {
