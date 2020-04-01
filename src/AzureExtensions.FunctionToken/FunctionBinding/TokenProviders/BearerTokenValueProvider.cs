@@ -52,7 +52,7 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.TokenProviders
 
                     if (!IsAuthorizedForAction(claimsPrincipal))
                     {
-                        throw new PrivilegeNotHeldException($"User is not in a valid role. Valid roles include: {string.Join(" ", InputAttribute.Roles)}.");
+                        throw new PrivilegeNotHeldException($"User does not hold privileges required for action.");
                     }
                     else
                     {
@@ -66,9 +66,9 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.TokenProviders
                     throw new AuthenticationException("No authentication provided in request.");
                 }
             }
-            catch (SecurityTokenExpiredException)
+            catch (SecurityTokenExpiredException ex)
             {
-                result = FunctionTokenResult.Expired(InputAttribute.Auth);
+                result = FunctionTokenResult.Expired(ex, InputAttribute.Auth);
             }
             catch (Exception ex)
             {

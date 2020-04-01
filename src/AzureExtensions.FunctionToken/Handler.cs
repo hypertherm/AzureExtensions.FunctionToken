@@ -4,6 +4,7 @@ using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AzureExtensions.FunctionToken
 {
@@ -13,6 +14,11 @@ namespace AzureExtensions.FunctionToken
         /// Catches AuthenticationException and returns UnauthorizedResult, otherwise BadRequestObjectResult. 
         /// </summary>
         public static async Task<IActionResult> WrapAsync(FunctionTokenResult token, Func<Task<IActionResult>> action)
+        {
+            return await WrapAsync(null, token, action);
+        }
+
+        public static async Task<IActionResult> WrapAsync(ILogger logger, FunctionTokenResult token, Func<Task<IActionResult>> action)
         {
             try
             {
@@ -26,37 +32,12 @@ namespace AzureExtensions.FunctionToken
             }
             catch (PrivilegeNotHeldException)
             {
-                var r = new ForbidResult(
-                    "Bearer"
-                );
+                var r = new ForbidResult("Bearer");
                 return r;
             }
-            catch (Exception ex)
+            catch (SecurityTokenExpiredException ex)
             {
-                return new BadRequestObjectResult(ex.Message);
-            }
-        }
-
-        public static async Task<IActionResult> WrapAsync(ILogger logger, FunctionTokenResult token, Func<Task<IActionResult>> action)
-        {
-            try
-            {
-                token.ValidateThrow();
-                var result = await action();
-                return result;
-            }
-            catch (AuthenticationException ex)
-            {
-                logger?.LogWarning(ex.Message, ex);
-                return new UnauthorizedResult();
-            }
-            catch (PrivilegeNotHeldException ex)
-            {
-                logger?.LogWarning(ex.Message, ex);
-                var r = new ForbidResult(
-                    "Bearer"
-                );
-                return r;
+                return new BadRequestObjectResult($"Authentication token expired at {ex.Expires}, current time is {DateTime.Now}. Acquire a new token to access this endpoint.");
             }
             catch (Exception ex)
             {
@@ -84,6 +65,10 @@ namespace AzureExtensions.FunctionToken
             {
                 var r = new ForbidResult("Bearer");
                 return r;
+            }
+            catch (SecurityTokenExpiredException ex)
+            {
+                return new BadRequestObjectResult($"Authentication token expired at {ex.Expires}, current time is {DateTime.Now}. Acquire a new token to access this endpoint.");
             }
             catch (Exception ex)
             {
