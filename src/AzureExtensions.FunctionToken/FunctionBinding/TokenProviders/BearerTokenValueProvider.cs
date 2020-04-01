@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Security.AccessControl;
 using System.Security.Authentication;
 using System.Security.Claims;
@@ -52,7 +52,7 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.TokenProviders
 
                     if (!IsAuthorizedForAction(claimsPrincipal))
                     {
-                        throw new PrivilegeNotHeldException($"User is not in a valid role. Valid roles include: {string.Join(" ", InputAttribute.Roles)}.");
+                        throw new PrivilegeNotHeldException($"User does not hold privileges required for action.");
                     }
                     else
                     {
