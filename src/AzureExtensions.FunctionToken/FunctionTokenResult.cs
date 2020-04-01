@@ -24,11 +24,12 @@ namespace AzureExtensions.FunctionToken
             };
         }
 
-        public static FunctionTokenResult Expired(AuthLevel level)
+        public static FunctionTokenResult Expired(Exception ex, AuthLevel level)
         {
             return new FunctionTokenResult
             {
                 Status = TokenStatus.Expired,
+                Exception = ex,
                 Level = level
             };
         }

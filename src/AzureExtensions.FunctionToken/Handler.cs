@@ -4,6 +4,7 @@ using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AzureExtensions.FunctionToken
 {
@@ -84,6 +85,10 @@ namespace AzureExtensions.FunctionToken
             {
                 var r = new ForbidResult("Bearer");
                 return r;
+            }
+            catch (SecurityTokenExpiredException ex)
+            {
+                return new BadRequestObjectResult($"Authentication token expired at {ex.Expires}. Acquire a new token to access this endpoint.");
             }
             catch (Exception ex)
             {

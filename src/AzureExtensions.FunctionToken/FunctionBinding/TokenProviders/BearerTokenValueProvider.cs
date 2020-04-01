@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Security.AccessControl;
 using System.Security.Authentication;
 using System.Security.Claims;
@@ -66,9 +66,9 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.TokenProviders
                     throw new AuthenticationException("No authentication provided in request.");
                 }
             }
-            catch (SecurityTokenExpiredException)
+            catch (SecurityTokenExpiredException ex)
             {
-                result = FunctionTokenResult.Expired(InputAttribute.Auth);
+                result = FunctionTokenResult.Expired(ex, InputAttribute.Auth);
             }
             catch (Exception ex)
             {
