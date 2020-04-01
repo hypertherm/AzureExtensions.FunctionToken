@@ -9,15 +9,15 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.Options
 {
     public sealed class Auth0Options : ITokenOptions
     {
-        public static string Scheme = "https";
-        public static int Port = 443;
-        public static string OpenIdConfigurationPath = "/.well-known/openid-configuration";
+        private static string scheme = "https";
+        private static int port = 443;
+        private static string openIdConfigurationPath = "/.well-known/openid-configuration";
         public TokenSigningKeyOptions SigningOptions { get; }
 
         public Auth0Options(string hostName, string audience)
             : this(
                 new ConfigurationManager<OpenIdConnectConfiguration>(
-                    new UriBuilder(Scheme, hostName, Port, OpenIdConfigurationPath).Uri.AbsoluteUri,
+                    new UriBuilder(scheme, hostName, port, openIdConfigurationPath).Uri.AbsoluteUri,
                     new OpenIdConnectConfigurationRetriever()
                 ),
                 audience
