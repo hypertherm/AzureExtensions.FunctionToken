@@ -42,7 +42,7 @@ namespace AzureExtensions.FunctionToken
             catch (Exception ex)
             {
                 logger?.LogError(ex.Message, ex);
-                return new BadRequestObjectResult(ex.Message);
+                return new BadRequestObjectResult("Provide a valid [Bearer ******] token in the 'Authorization' header of your request. If you don't have a token yet, use the Insomnia templates or enable the Mocking feature in the API reference documentation.");
             }
         }
 
