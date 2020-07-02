@@ -86,8 +86,11 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.B2C
 
         protected override bool IsAuthorizedForAction(ClaimsPrincipal claimsPrincipal)
         {
-            return claimsPrincipal.IsInScope(InputAttribute.ScopeRequired, ScopeClaimNameFromPrincipal)
-                && claimsPrincipal.IsInRole(InputAttribute.Roles);
+            return claimsPrincipal.IsInScope(
+                InputAttribute != null && InputAttribute.Scopes.Length > 0 ? InputAttribute.Scopes[0] : "", 
+                ScopeClaimNameFromPrincipal
+            )
+            && claimsPrincipal.IsInRole(InputAttribute.Roles);
         }
     }
 }

@@ -20,7 +20,7 @@ namespace AzureExtensions.FunctionToken.Tests
     {
         [Theory]
         [ClassData(typeof(UnitsTestData))]
-        public void GetValueAsyncWorksForScope(string requiredScope, string[] authorizedRoles, List<Claim> claims, TokenStatus tokenStatus)
+        public void GetValueAsyncWorksForScope(string[] requiredScopes, string[] authorizedRoles, List<Claim> claims, TokenStatus tokenStatus)
         {
             Mock<HttpRequest> request = new Mock<HttpRequest>();
             request
@@ -61,7 +61,7 @@ namespace AzureExtensions.FunctionToken.Tests
 
             FunctionTokenAttribute attribute = new FunctionTokenAttribute(
                 AuthLevel.Authorized,
-                requiredScope,
+                requiredScopes,
                 authorizedRoles
             );
             SecurityToken mockSecurityToken = Mock.Of<SecurityToken>();
@@ -120,14 +120,20 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
 
                 yield return new object[] {
-                    "",
+                    new string[] {},
+                    new string[] {},
+                    new List<Claim>(),
+                    TokenStatus.Valid
+                };
+                yield return new object[] {
+                    new string[] {""},
                     new string[] {},
                     new List<Claim>(),
                     TokenStatus.Valid
                 };
 
                 yield return new object[] {
-                    "",
+                    new string[] {""},
                     null,
                     new List<Claim>(),
                     TokenStatus.Valid
@@ -135,7 +141,17 @@ namespace AzureExtensions.FunctionToken.Tests
 
                 // Only  scope is required
                 yield return new object[] {
-                    "read",
+                    new string[] {"read"},
+                    null,
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "Read"),
+                    },
+                    TokenStatus.Valid
+                };
+                
+                yield return new object[] {
+                    new string[] {"read", "extra"},
                     null,
                     new List<Claim> 
                     {
@@ -145,7 +161,7 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read" },
                     new string[] {},
                     new List<Claim> 
                     {
@@ -155,7 +171,27 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read", "extra" },
+                    new string[] {},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "Read"),
+                    },
+                    TokenStatus.Valid
+                };
+
+                yield return new object[] {
+                    new string[] { "extra1", "read", "extra2" },
+                    new string[] {},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "Read"),
+                    },
+                    TokenStatus.Valid
+                };
+
+                yield return new object[] {
+                    new string[] { "read" },
                     new string[] {},
                     new List<Claim> 
                     {
@@ -165,7 +201,7 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read" },
                     null,
                     new List<Claim> 
                     {
@@ -175,14 +211,28 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
                 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read" },
                     null,
                     new List<Claim> (),
                     TokenStatus.Error
                 };
                 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read" },
+                    new string[] {},
+                    new List<Claim> (),
+                    TokenStatus.Error
+                };
+
+                yield return new object[] {
+                    new string[] { "read", "write"},
+                    null,
+                    new List<Claim> (),
+                    TokenStatus.Error
+                };
+                
+                yield return new object[] {
+                    new string[] { "read", "write"},
                     new string[] {},
                     new List<Claim> (),
                     TokenStatus.Error
@@ -190,7 +240,7 @@ namespace AzureExtensions.FunctionToken.Tests
 
                 // Handle multiple scopes in returned claim
                 yield return new object[] {
-                    "read",
+                    new string[] { "read" },
                     null,
                     new List<Claim> 
                     {
@@ -200,7 +250,7 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read" },
                     new string[] {},
                     new List<Claim> 
                     {
@@ -209,9 +259,28 @@ namespace AzureExtensions.FunctionToken.Tests
                     TokenStatus.Valid
                 };
                 
+                yield return new object[] {
+                    new string[] { "read", "write" },
+                    null,
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "write read"),
+                    },
+                    TokenStatus.Valid
+                };
+
+                yield return new object[] {
+                    new string[] { "read", "write" },
+                    new string[] {},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "write read"),
+                    },
+                    TokenStatus.Valid
+                };
                 // Scope and Role Required by function
                 yield return new object[] {
-                    "read",
+                    new string[] { "read" },
                     new string[] {"user"},
                     new List<Claim> 
                     {
@@ -221,7 +290,7 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read" },
                     new string[] {"user"},
                     new List<Claim> 
                     {
@@ -231,7 +300,27 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
                 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read", "write" },
+                    new string[] {"user"},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "read"),
+                    },
+                    TokenStatus.Error
+                };
+
+                yield return new object[] {
+                    new string[] { "read", "write" },
+                    new string[] {"user"},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "write read"),
+                    },
+                    TokenStatus.Error
+                };
+
+                yield return new object[] {
+                    new string[] { "read" },
                     new string[] {"user"},
                     new List<Claim> 
                     {
@@ -242,7 +331,28 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
                 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read", "write" },
+                    new string[] {"user"},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "read"),
+                        new Claim(ClaimTypes.Role, "nonuser")
+                    },
+                    TokenStatus.Error
+                };
+                yield return new object[] {
+                    new string[] { "read", "write" },
+                    new string[] {"user"},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "read write"),
+                        new Claim(ClaimTypes.Role, "nonuser")
+                    },
+                    TokenStatus.Error
+                };
+
+                yield return new object[] {
+                    new string[] { "read" },
                     new string[] {"user"},
                     new List<Claim> 
                     {
@@ -253,7 +363,7 @@ namespace AzureExtensions.FunctionToken.Tests
                 };
 
                 yield return new object[] {
-                    "read",
+                    new string[] { "read" },
                     new string[] {"user"},
                     new List<Claim> 
                     {
@@ -263,12 +373,44 @@ namespace AzureExtensions.FunctionToken.Tests
                     TokenStatus.Valid
                 };
                 
+
                 yield return new object[] {
-                    "read",
+                    new string[] { "read", "write" },
+                    new string[] {"user"},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "read"),
+                        new Claim(ClaimTypes.Role, "user")
+                    },
+                    TokenStatus.Valid
+                };
+
+                yield return new object[] {
+                    new string[] { "read", "write" },
+                    new string[] {"user"},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "write read"),
+                        new Claim(ClaimTypes.Role, "user")
+                    },
+                    TokenStatus.Valid
+                };
+                yield return new object[] {
+                    new string[] { "read" },
                     new string[] {"admin", "user"},
                     new List<Claim> 
                     {
                         new Claim("scope", "read"),
+                        new Claim(ClaimTypes.Role, "user")
+                    },
+                    TokenStatus.Valid
+                };
+                yield return new object[] {
+                    new string[] { "read", "write" },
+                    new string[] {"admin", "user"},
+                    new List<Claim> 
+                    {
+                        new Claim("scope", "read write"),
                         new Claim(ClaimTypes.Role, "user")
                     },
                     TokenStatus.Valid

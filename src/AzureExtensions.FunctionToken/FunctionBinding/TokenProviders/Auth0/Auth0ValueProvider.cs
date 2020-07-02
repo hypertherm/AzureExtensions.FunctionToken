@@ -35,8 +35,25 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.TokenProviders.Auth0
 
         protected override bool IsAuthorizedForAction(ClaimsPrincipal claimsPrincipal)
         {
-            return claimsPrincipal.IsInScope(InputAttribute.ScopeRequired, ScopeClaimNameFromPrincipal)
-                && claimsPrincipal.IsInRole(InputAttribute.Roles);
+            bool anyScopeMatch = false;
+            // if any scopes are present check them
+            if (InputAttribute.Scopes != null && InputAttribute.Scopes.Length > 0)
+            {
+                // Check each of the scopes
+                foreach(string scope in InputAttribute.Scopes)
+                {
+                    // Currently only support OR
+                    anyScopeMatch |= claimsPrincipal.IsInScope(scope, ScopeClaimNameFromPrincipal);
+                }
+            }
+            else // no scopes are present
+            {
+                // This is true by default
+                anyScopeMatch = true;
+            }
+
+            // Combine the scope and role requirements
+            return anyScopeMatch && claimsPrincipal.IsInRole(InputAttribute.Roles);
         }
     }
 }

@@ -15,18 +15,29 @@ namespace AzureExtensions.FunctionToken
     public sealed class FunctionTokenAttribute : Attribute
     {
         public AuthLevel Auth { get;  }
-
-        public string ScopeRequired { get; }
+        public string[] Scopes { get; }
         public List<string> Roles { get; }
 
         public FunctionTokenAttribute(
             AuthLevel level,
             string scope,
             string[] roles
+        ): this (
+            level,
+            new string[] { scope },
+            roles
+        )
+        {
+        }
+        
+        public FunctionTokenAttribute(
+            AuthLevel level,
+            string[] scopes,
+            string[] roles
         )
         {
             Auth = level;
-            ScopeRequired = scope;
+            Scopes = scopes;
             Roles = new List<string>();
             if (roles != null)
             {

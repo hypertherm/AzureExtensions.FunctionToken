@@ -105,8 +105,10 @@ namespace AzureExtensions.FunctionToken.FunctionBinding.TokenProviders
         /// </summary>
         protected virtual bool IsAuthorizedForAction(ClaimsPrincipal claimsPrincipal)
         {
-            return claimsPrincipal.IsInScope(InputAttribute.ScopeRequired)
-                && claimsPrincipal.IsInRole(InputAttribute.Roles);
+            return claimsPrincipal.IsInScope(
+                InputAttribute != null && InputAttribute.Scopes.Length > 0 ? InputAttribute.Scopes[0] : ""
+            )
+            && claimsPrincipal.IsInRole(InputAttribute.Roles);
         }
     }
 }
