@@ -1,0 +1,74 @@
+name: PR CI build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  BUILD_CONFIGURATION: 'Release'
+  DOTNET_VERSION: '3.1.x'  # set this to the dotnet version to use
+  NUGET_FEED: 'https://nuget.pkg.github.com/hypertherm/index.json'
+  NUGET_PACK_PATH: './nuget-output'
+
+jobs:
+  build_test_pack_archive: # this installs the build tools, builds the code, runs unit tests against it, and packages the work for deployment
+    
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Repo
+      id: checkout
+      uses: actions/checkout@main
+      with:
+        fetch-depth: 0
+    
+    - name: Setup DotNet ${{ env.DOTNET_VERSION }} Environment
+      id: dotnet_setup
+      uses: actions/setup-dotnet@main
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Install GitVersion # From here: https://github.com/GitTools/actions
+      id: install_gitversion
+      uses: gittools/actions/gitversion/setup@master
+      with:
+          versionSpec: '5.x'
+
+    - name: Generate Version Number with GitVersion
+      id: gitversion # step id used as reference for output values
+      uses: gittools/actions/gitversion/execute@master
+    
+    - name: Install dependencies
+      id: restore_dependencies
+      run: |
+        dotnet nuget add source ${{ env.NUGET_FEED }} -n user-github -u ${{ secrets.NUGET_PAT_USERNAME}} -p ${{ secrets.NUGET_PAT }} --store-password-in-clear-text
+        dotnet restore
+        dotnet nuget remove source user-github
+
+    - name: Build
+      id: dotnet_build
+      run: dotnet build --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore /p:Version=${{ steps.gitversion.outputs.nuGetVersion }}
+
+    - name: Test
+      id: unit_testing
+      run: dotnet test --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --no-build
+
+    - name: Package NuGets
+      id: nuget_packaging
+      run: dotnet pack --configuration ${{ env.BUILD_CONFIGURATION }} -o ${{ env.NUGET_PACK_PATH }} --no-restore --no-build /p:Version=${{ steps.gitversion.outputs.nuGetVersion }}
+    
+    - name: Push generated package to GitHub Packages
+      id: nuget_push_github_packages
+      run: |
+        ls "**/*.nupkg"
+        dotnet nuget add source ${{ env.NUGET_FEED }} -n hypertherm-org-github -u hypertherm -p ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
+        dotnet nuget push "**/*.nupkg" --source hypertherm-org-github --skip-duplicate --no-symbols true -k ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Archive NuGets artifacts
+      id: archive_nugets
+      uses: actions/upload-artifact@main
+      with:
+        name: NuGet-Packages
+        path: ${{ env.NUGET_PACK_PATH }}]
